@@ -152,14 +152,6 @@ END
 $$ LANGUAGE plpgsql;
 
 SELECT manage_scd_type2(
-    'dim_category',
-    'remote_categories',
-    ARRAY['category_id'],
-    ARRAY['name', 'description'],
-    ARRAY[]::TEXT[]
-);
-
-SELECT manage_scd_type2(
     'dim_comment',
     'remote_comments',
     ARRAY['comment_id'],
@@ -191,6 +183,15 @@ SELECT manage_scd_type2(
     ARRAY[]::TEXT[]
 );
 
+-- Categories should be uploaded BEFORE videos (insert_fact_video_category() requires it)
+SELECT manage_scd_type2(
+    'dim_category',
+    'remote_categories',
+    ARRAY['category_id'],
+    ARRAY['name', 'description'],
+    ARRAY[]::TEXT[]
+);
+
 SELECT manage_scd_type2(
     'dim_video',
     'remote_videos',
@@ -199,7 +200,7 @@ SELECT manage_scd_type2(
     ARRAY[]::TEXT[]
 );
 
--- Likes should be uploaded after videos (update_fact_video_likes() requires it)
+-- Likes should be uploaded AFTER videos (update_fact_video_likes() requires it)
 SELECT manage_scd_type2(
     'dim_like',
     'remote_likes',
