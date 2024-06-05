@@ -52,5 +52,3 @@ This project provides a script to load CSV data into an OLTP (Online Transaction
 - Ensure you have the correct paths in your `.env` file.
 - Verify you have Python 3.x installed.
 - Ensure all required Python packages are installed (`requirements.txt`).
-
-For further assistance, please refer to the project's documentation or contact the support team.
