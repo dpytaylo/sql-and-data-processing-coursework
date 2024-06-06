@@ -152,6 +152,14 @@ END
 $$ LANGUAGE plpgsql;
 
 SELECT manage_scd_type2(
+    'dim_category',
+    'remote_categories',
+    ARRAY['category_id'],
+    ARRAY['name', 'description'],
+    ARRAY[]::TEXT[]
+);
+
+SELECT manage_scd_type2(
     'dim_comment',
     'remote_comments',
     ARRAY['comment_id'],
@@ -160,10 +168,26 @@ SELECT manage_scd_type2(
 );
 
 SELECT manage_scd_type2(
+    'dim_like',
+    'remote_likes',
+    ARRAY['video_id', 'user_id'],
+    ARRAY[]::TEXT[],
+    ARRAY[]::TEXT[]
+);
+
+SELECT manage_scd_type2(
     'dim_playlist',
     'remote_playlists',
     ARRAY['playlist_id'],
     ARRAY['user_id', 'name', 'description', 'creation_date'],
+    ARRAY[]::TEXT[]
+);
+
+SELECT manage_scd_type2(
+    'dim_playlist_video',
+    'remote_playlist_videos',
+    ARRAY['playlist_id', 'video_id'],
+    ARRAY[]::TEXT[],
     ARRAY[]::TEXT[]
 );
 
@@ -183,12 +207,11 @@ SELECT manage_scd_type2(
     ARRAY[]::TEXT[]
 );
 
--- Categories should be uploaded BEFORE videos (insert_fact_video_category() requires it)
 SELECT manage_scd_type2(
-    'dim_category',
-    'remote_categories',
-    ARRAY['category_id'],
-    ARRAY['name', 'description'],
+    'dim_video_category',
+    'remote_video_categories',
+    ARRAY['video_id', 'category_id'],
+    ARRAY[]::TEXT[],
     ARRAY[]::TEXT[]
 );
 
@@ -197,14 +220,5 @@ SELECT manage_scd_type2(
     'remote_videos',
     ARRAY['video_id'],
     ARRAY['user_id', 'title', 'description', 'upload_date', 'video_url', 'thumbnail_url'],
-    ARRAY[]::TEXT[]
-);
-
--- Likes should be uploaded AFTER videos (update_fact_video_likes() requires it)
-SELECT manage_scd_type2(
-    'dim_like',
-    'remote_likes',
-    ARRAY['video_id', 'user_id'],
-    ARRAY[]::TEXT[],
     ARRAY[]::TEXT[]
 );

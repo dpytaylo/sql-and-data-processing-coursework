@@ -87,6 +87,15 @@ CREATE TABLE IF NOT EXISTS dim_category (
     current_flag BOOLEAN
 );
 
+CREATE TABLE IF NOT EXISTS dim_video_category (
+    video_category_sk SERIAL PRIMARY KEY,
+    video_id INT NOT NULL,
+    category_id INT NOT NULL,
+    start_date TIMESTAMP NOT NULL,
+    end_date TIMESTAMP,
+    current_flag BOOLEAN
+);
+
 CREATE TABLE IF NOT EXISTS dim_comment (
     comment_sk SERIAL PRIMARY KEY,
     comment_id INT NOT NULL,
@@ -120,6 +129,15 @@ CREATE TABLE IF NOT EXISTS dim_playlist (
     current_flag BOOLEAN
 );
 
+CREATE TABLE IF NOT EXISTS dim_playlist_video (
+    playlist_video_sk SERIAL PRIMARY KEY,
+    playlist_id INT NOT NULL,
+    video_id INT NOT NULL,
+    start_date TIMESTAMP NOT NULL,
+    end_date TIMESTAMP,
+    current_flag BOOLEAN
+);
+
 CREATE TABLE IF NOT EXISTS dim_subscription (
     user_subscription_sk SERIAL PRIMARY KEY,
     subscriber_id INT,
@@ -146,71 +164,9 @@ CREATE TABLE IF NOT EXISTS fact_video_user (
     FOREIGN KEY (user_sk) REFERENCES dim_user(user_sk)
 );
 
-CREATE TABLE IF NOT EXISTS fact_video_likes (
-    video_likes_sk SERIAL PRIMARY KEY,
+CREATE TABLE IF NOT EXISTS fact_video_like (
+    video_like_sk SERIAL PRIMARY KEY,
     video_sk INT,
     likes_count INT,
     FOREIGN KEY (video_sk) REFERENCES dim_video(video_sk)
 );
-
--- All triggers for the fact_* tables
-CREATE OR REPLACE FUNCTION insert_fact_video_category()
-RETURNS TRIGGER AS $$
-DECLARE
-    v_category_id INT;
-BEGIN
-    FOR v_category_id IN (SELECT category_id FROM remote_video_categories WHERE remote_video_categories.video_id = NEW.video_id) LOOP
-        INSERT INTO fact_video_category (video_sk, category_sk)
-        VALUES (
-            (SELECT video_sk FROM dim_video WHERE video_id = NEW.video_id AND current_flag = TRUE),
-            (SELECT category_sk FROM dim_category WHERE category_id = v_category_id AND current_flag = TRUE)
-        );
-    END LOOP;
-
-    RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-
-CREATE OR REPLACE TRIGGER trg_insert_fact_video_category
-AFTER INSERT ON dim_video
-FOR EACH ROW
-EXECUTE FUNCTION insert_fact_video_category();
-
-CREATE OR REPLACE FUNCTION insert_fact_video_user()
-RETURNS TRIGGER AS $$
-BEGIN
-    INSERT INTO fact_video_user (video_sk, user_sk)
-    VALUES (
-        (SELECT video_sk FROM dim_video WHERE video_id = NEW.video_id AND current_flag = TRUE),
-        (SELECT user_sk FROM dim_user WHERE user_id = NEW.user_id AND current_flag = TRUE)
-    );
-    RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-
-CREATE OR REPLACE TRIGGER trg_insert_fact_video_user
-AFTER INSERT ON dim_video
-FOR EACH ROW
-EXECUTE FUNCTION insert_fact_video_user();
-
-CREATE OR REPLACE FUNCTION update_fact_video_likes()
-RETURNS TRIGGER AS $$
-BEGIN
-    IF EXISTS (SELECT 1 FROM fact_video_likes fvl WHERE fvl.video_sk = (SELECT video_sk FROM dim_video WHERE video_id = NEW.video_id AND current_flag = TRUE)) THEN
-        UPDATE fact_video_likes
-        SET likes_count = likes_count + 1
-        WHERE video_sk = (SELECT video_sk FROM dim_video WHERE video_id = NEW.video_id AND current_flag = TRUE);
-    ELSE
-        INSERT INTO fact_video_likes (video_sk, likes_count)
-        VALUES ((SELECT video_sk FROM dim_video WHERE video_id = NEW.video_id AND current_flag = TRUE), 1);
-    END IF;
-
-    RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-
--- Trigger to call the function after insertion in dim_like table
-CREATE OR REPLACE TRIGGER trg_update_fact_video_likes
-AFTER INSERT ON dim_like
-FOR EACH ROW
-EXECUTE FUNCTION update_fact_video_likes();
